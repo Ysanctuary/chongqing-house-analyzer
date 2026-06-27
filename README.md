@@ -137,7 +137,7 @@ python -c "import flask, pymysql, sklearn, curl_cffi, brotli; print('OK')"
 > | 文件 | 在仓库里吗 | 是什么 |
 > |---|---|---|
 > | `config.example.py` | ✅ 是 | 配置模板（不含密码、可以公开）|
-> | `config.py` | ❌ 否 | 你的本地配置（含密码，已加 `.gitignore`，**你必须自己创建**）|
+> | `config.py` | ❌ 否 | 你的本地配置（含密码，**你必须自己创建**）（当然你也可以直接修改上面的名字然后添加代码）|
 > 
 > 💡 **为什么需要两个文件？**
 > 

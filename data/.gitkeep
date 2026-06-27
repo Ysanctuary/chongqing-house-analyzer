@@ -1,0 +1,8 @@
+# 此目录用于存放：
+# - cookie.txt / lianjia_cookie*.txt  （用户登录 Cookie，已 .gitignore）
+# - *.html                            （爬虫样本，已 .gitignore）
+# - parse_result.txt / raw_texts.txt   （调试产物，已 .gitignore）
+#
+# 用户首次使用时：
+#   - 创建 cookie.txt 写入 58 登录 Cookie
+#   - 创建 lianjia_cookie.txt 写入链家登录 Cookie

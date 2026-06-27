@@ -1,0 +1,275 @@
+{% from "icons.html" import icon_charts %}
+{% extends "base.html" %}
+
+{% block title %}图表分析 - 重庆二手房分析{% endblock %}
+
+{% block content %}
+<h1 class="page-title reveal">{{ icon_charts('page-icon') }} 图表分析</h1>
+<p class="page-subtitle reveal">单价 / 总价 / 户型 / 面积 / 装修 —— 多维度可视化</p>
+
+<!-- ============ Section 1: 价格分布（核心指标） ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">核心</span>
+        <h2 class="section-title">💰 价格分布</h2>
+        <p class="section-desc">直接决定购房预算的两大指标</p>
+    </div>
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-title">单价分布</div>
+            <div id="chart-unit-price" class="chart chart-mid"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">总价分布</div>
+            <div id="chart-total-price" class="chart chart-mid"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Section 2: 房型属性（6 图 3x2） ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">属性</span>
+        <h2 class="section-title">🏠 房型属性</h2>
+        <p class="section-desc">从户型、装修、朝向、楼层、面积、年代看供应结构</p>
+    </div>
+    <div class="grid grid-3">
+        <div class="card">
+            <div class="card-title">户型</div>
+            <div id="chart-layout" class="chart chart-sm"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">装修</div>
+            <div id="chart-decoration" class="chart chart-sm"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">朝向</div>
+            <div id="chart-orientation" class="chart chart-sm"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">楼层</div>
+            <div id="chart-floor" class="chart chart-sm"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">面积区间</div>
+            <div id="chart-area" class="chart chart-sm"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">建成年代</div>
+            <div id="chart-year" class="chart chart-sm"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Section 3: 深度分析（单价 vs 面积） ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">深度</span>
+        <h2 class="section-title">🔬 单价 vs 面积 散点图</h2>
+        <p class="section-desc">从 1000 条采样中看"面积越大，单价越低"的房价分布规律</p>
+    </div>
+    <div class="card">
+        <div id="chart-scatter" class="chart chart-large"></div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+
+    // ============ 通用 ============
+    const filterLayout = items => items.filter(d => d.layout && d.layout !== 'nan' && !d.layout.includes('nan') && d.cnt > 0);
+    const filterSimple = items => items.filter(d => d && d.cnt > 0);
+
+    // ============ 单价分布 ============
+    const unitP = await fetchJson('/api/price_distribution');
+    echarts.init(document.getElementById('chart-unit-price')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis',
+            formatter: p => `${p[0].name}<br/>房源数: <b>${p[0].value.toLocaleString()}</b>` },
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true },
+        xAxis: {
+            ...ECHART_THEME.xAxis, type: 'category',
+            data: unitP.data.map(d => d.bucket),
+            axisLabel: { ...ECHART_THEME.xAxis.axisLabel, rotate: 30, fontSize: 11 },
+        },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '房源数' },
+        series: [{
+            type: 'bar',
+            data: unitP.data.map(d => d.cnt),
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: '#764ba2' },
+                    ]},
+                borderRadius: [6, 6, 0, 0],
+                ...barGlow('rgba(102,126,234,0.4)'),
+            },
+            ...emphasisBar,
+            label: { show: true, position: 'top', color: '#a0aec0', fontSize: 10 },
+        }],
+    });
+
+    // ============ total 总价分布 ============
+    const totalP = await fetchJson('/api/total_price_distribution');
+    echarts.init(document.getElementById('chart-total-price')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis',
+            formatter: p => `${p[0].name}<br/>房源数: <b>${p[0].value.toLocaleString()}</b>` },
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true },
+        xAxis: {
+            ...ECHART_THEME.xAxis, type: 'category',
+            data: totalP.data.map(d => d.bucket),
+            axisLabel: { ...ECHART_THEME.xAxis.axisLabel, rotate: 30, fontSize: 11 },
+        },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '房源数' },
+        series: [{
+            type: 'bar',
+            data: totalP.data.map(d => d.cnt),
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                        { offset: 0, color: '#f093fb' },
+                        { offset: 1, color: '#c026d3' },
+                    ]},
+                borderRadius: [6, 6, 0, 0],
+                ...barGlow('rgba(240,147,251,0.4)'),
+            },
+            ...emphasisBar,
+            label: { show: true, position: 'top', color: '#a0aec0', fontSize: 10 },
+        }],
+    });
+
+    // ============ 房型属性（6 小图） ============
+    const layout = filterLayout(await fetchJson('/api/layout_distribution'));
+    echarts.init(document.getElementById('chart-layout')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'item' },
+        legend: { ...ECHART_THEME.legend, bottom: 0, textStyle: { fontSize: 11 } },
+        series: [{
+            type: 'pie',
+            radius: ['45%', '72%'],
+            data: layout.map(d => ({ name: d.layout, value: d.cnt })),
+            label: { color: '#a0aec0', fontSize: 11, formatter: '{b}\n{d}%' },
+            itemStyle: { borderColor: '#0a0a0f', borderWidth: 2, ...pieGlow() },
+            ...emphasisPie,
+        }],
+    });
+
+    const dec = filterSimple(await fetchJson('/api/decoration_distribution'));
+    echarts.init(document.getElementById('chart-decoration')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '12%', top: '15%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category', data: dec.map(d => d.decoration), axisLabel: { fontSize: 11 } },
+        yAxis: [
+            { ...ECHART_THEME.yAxis, type: 'value', name: '房源数', nameTextStyle: { fontSize: 11 } },
+            { ...ECHART_THEME.yAxis, type: 'value', name: '均价', position: 'right',
+              axisLabel: { ...ECHART_THEME.yAxis.axisLabel, formatter: v => (v/1000).toFixed(0) + 'k', fontSize: 10 } },
+        ],
+        series: [
+            { name: '房源数', type: 'bar', data: dec.map(d => d.cnt),
+              itemStyle: { color: barGrad('#667eea', '#764ba2', 'v'), borderRadius: [4, 4, 0, 0], ...barGlow('rgba(102,126,234,0.3)') },
+              ...emphasisBar,
+              barWidth: '40%' },
+            { name: '均价', type: 'line', yAxisIndex: 1,
+              data: dec.map(d => d.avg_unit),
+              itemStyle: { color: '#f093fb' },
+              lineStyle: { color: '#f093fb', width: 2 },
+              areaStyle: { color: barGrad('rgba(240,147,251,0.25)', 'rgba(240,147,251,0.02)', 'v') },
+              symbol: 'circle', symbolSize: 6, smooth: true },
+        ],
+    });
+
+    const orient = filterSimple(await fetchJson('/api/orientation_distribution'));
+    echarts.init(document.getElementById('chart-orientation')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '12%', top: '15%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category', data: orient.map(d => d.orientation), axisLabel: { fontSize: 11 } },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '房源数', nameTextStyle: { fontSize: 11 } },
+        series: [{
+            type: 'bar', data: orient.map(d => d.cnt),
+            itemStyle: { color: barGrad('#a78bfa', '#764ba2', 'v'), borderRadius: [4, 4, 0, 0], ...barGlow('rgba(167,139,250,0.4)') },
+            ...emphasisBar,
+            barWidth: '40%',
+        }],
+    });
+
+    const floor = filterSimple(await fetchJson('/api/floor_distribution'));
+    echarts.init(document.getElementById('chart-floor')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'item' },
+        legend: { ...ECHART_THEME.legend, bottom: 0, textStyle: { fontSize: 11 } },
+        series: [{
+            type: 'pie',
+            radius: '60%',
+            data: floor.map(d => ({ name: d.floor_info, value: d.cnt })),
+            label: { color: '#a0aec0', fontSize: 11, formatter: '{b}\n{d}%' },
+            itemStyle: { borderColor: '#0a0a0f', borderWidth: 2, ...pieGlow() },
+            ...emphasisPie,
+        }],
+    });
+
+    const area = filterSimple(await fetchJson('/api/area_distribution'));
+    echarts.init(document.getElementById('chart-area')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '12%', top: '15%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category', data: area.map(d => d.bucket), axisLabel: { fontSize: 10 } },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '房源数', nameTextStyle: { fontSize: 11 } },
+        series: [{
+            type: 'bar', data: area.map(d => d.cnt),
+            itemStyle: { color: barGrad('#6ee7b7', '#667eea', 'v'), borderRadius: [4, 4, 0, 0], ...barGlow('rgba(110,231,183,0.4)') },
+            ...emphasisBar,
+            barWidth: '50%',
+        }],
+    });
+
+    const year = filterSimple(await fetchJson('/api/building_year_distribution'));
+    echarts.init(document.getElementById('chart-year')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '12%', top: '15%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category', data: year.map(d => d.building_year), axisLabel: { fontSize: 9, rotate: 30 } },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '房源数', nameTextStyle: { fontSize: 11 } },
+        series: [{
+            type: 'bar', data: year.map(d => d.cnt),
+            itemStyle: { color: barGrad('#ffd93d', '#fb923c', 'v'), borderRadius: [4, 4, 0, 0], ...barGlow('rgba(255,217,61,0.4)') },
+            ...emphasisBar,
+            barWidth: '60%',
+        }],
+    });
+
+    // ============ 散点图 ============
+    const scatter = await fetchJson('/api/price_vs_area');
+    // 按区县着色
+    const districts = [...new Set(scatter.data.map(d => d.district))].filter(Boolean).sort();
+    const colorPalette = ['#667eea', '#f093fb', '#a78bfa', '#6ee7b7', '#ffd93d', '#fb923c', '#c084fc', '#34d399'];
+    const districtColor = {};
+    districts.forEach((d, i) => { districtColor[d] = colorPalette[i % colorPalette.length]; });
+
+    echarts.init(document.getElementById('chart-scatter')).setOption({
+        ...ECHART_THEME,
+        tooltip: {
+            ...ECHART_THEME.tooltip,
+            formatter: p => `<b>${p.data[3] || ''}</b><br>面积: ${p.data[1]}㎡<br>单价: ${p.data[0]}元/㎡<br>总价: ${p.data[2]}万`
+        },
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true },
+        legend: { ...ECHART_THEME.legend, top: 5, type: 'scroll', textStyle: { fontSize: 11 } },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'value', name: '面积 (㎡)' },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '单价 (元/㎡)' },
+        series: districts.map(d => ({
+            name: d,
+            type: 'scatter',
+            data: scatter.data.filter(x => x.district === d).map(x => [x.area, x.unit_price, x.total_price, x.district]),
+            symbolSize: 6,
+            itemStyle: { color: districtColor[d], opacity: 0.6 },
+            emphasis: { itemStyle: { shadowBlur: 20, shadowColor: 'rgba(102,126,234,0.5)', borderColor: '#fff', borderWidth: 1 } },
+        })),
+    });
+})();
+</script>
+{% endblock %}

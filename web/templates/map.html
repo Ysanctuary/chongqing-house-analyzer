@@ -1,0 +1,152 @@
+{% from "icons.html" import icon_map %}
+{% extends "base.html" %}
+
+{% block title %}地图视图 - 重庆二手房分析{% endblock %}
+
+{% block content %}
+<h1 class="page-title reveal">{{ icon_map('page-icon') }} 重庆各区县房价地图</h1>
+<p class="page-subtitle reveal">颜色深浅代表平均单价高低，悬停可查看详情</p>
+
+<div class="card reveal">
+    <div id="map-chart" class="chart chart-large"></div>
+</div>
+
+<div class="grid grid-2 reveal" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-title">单价 TOP 10 区县</div>
+        <div id="chart-top-districts" class="chart"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">单价 TOP 10 板块</div>
+        <div id="chart-top-biz" class="chart"></div>
+    </div>
+</div>
+
+<div class="card reveal" style="margin-top: 20px;">
+    <div class="card-title">各区县详细数据</div>
+    <table class="table" id="district-table">
+        <thead>
+            <tr>
+                <th>区县</th>
+                <th>房源数</th>
+                <th>平均单价(元/㎡)</th>
+                <th>平均总价(万)</th>
+                <th>平均面积(㎡)</th>
+                <th>最低</th>
+                <th>最高</th>
+            </tr>
+        </thead>
+        <tbody id="district-tbody"></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+    const geo = await fetchJson('/api/district_geo');
+    const district = await fetchJson('/api/district_stats');
+    const biz = await fetchJson('/api/bizcircle_stats');
+
+    // 主地图：散点 + 柱状
+    echarts.init(document.getElementById('map-chart')).setOption({
+        ...ECHART_THEME,
+        title: { text: '重庆各区县平均单价分布', left: 'center', textStyle: { color: '#fff', fontSize: 18 } },
+        grid: { left: '5%', right: '5%', top: '15%', bottom: '10%', containLabel: true },
+        xAxis: {
+            type: 'value', name: '经度', min: 106.30, max: 106.75,
+            ...ECHART_THEME.xAxis,
+        },
+        yAxis: {
+            type: 'value', name: '纬度', min: 29.35, max: 29.85,
+            ...ECHART_THEME.yAxis,
+        },
+        tooltip: {
+            ...ECHART_THEME.tooltip,
+            formatter: function(p) {
+                return `<b>${p.data[2]}</b><br>平均单价: <b style="color:#667eea">${p.data[3]} 元/㎡</b><br>房源数: ${p.data[4]}<br>坐标: ${p.data[0].toFixed(3)}, ${p.data[1].toFixed(3)}`;
+            }
+        },
+        series: [{
+            type: 'scatter',
+            symbolSize: function(d) {
+                return Math.max(20, Math.min(80, d[4] / 200));
+            },
+            data: geo.data.map(d => [d.coord[0], d.coord[1], d.name, d.value, d.count]),
+            itemStyle: {
+                color: function(p) {
+                    // 根据单价上色
+                    const v = p.data[3];
+                    if (v >= 14000) return '#f093fb';
+                    if (v >= 11000) return '#ffd93d';
+                    if (v >= 8000) return '#667eea';
+                    return '#6ee7b7';
+                },
+                opacity: 0.7,
+                shadowBlur: 20,
+                shadowColor: 'rgba(102, 126, 234, 0.5)',
+            },
+            label: {
+                show: true,
+                position: 'top',
+                formatter: p => p.data[2],
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 'bold',
+            },
+            emphasis: { itemStyle: { shadowBlur: 30, shadowColor: 'rgba(102,126,234,0.6)', borderColor: '#fff', borderWidth: 2 } },
+        }],
+    });
+
+    // TOP 区县
+    const topDistricts = district.data.slice(0, 10).reverse();
+    echarts.init(document.getElementById('chart-top-districts')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '8%', bottom: '3%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'value' },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'category', data: topDistricts.map(d => d.district) },
+        series: [{
+            type: 'bar',
+            data: topDistricts.map(d => d.avg_unit),
+            itemStyle: { color: barGrad('#667eea', '#764ba2', 'h'), borderRadius: [0, 4, 4, 0], ...barGlow('rgba(102,126,234,0.4)') },
+            ...emphasisBar,
+            label: { show: true, position: 'right', color: '#a0aec0' },
+        }],
+    });
+
+    // TOP 板块
+    const topBiz = biz.data.slice(0, 10).reverse();
+    echarts.init(document.getElementById('chart-top-biz')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '8%', bottom: '3%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'value' },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'category', data: topBiz.map(d => `${d.bizcircle} (${d.district})`) },
+        series: [{
+            type: 'bar',
+            data: topBiz.map(d => d.avg_unit),
+            itemStyle: { color: barGrad('#f093fb', '#c026d3', 'h'), borderRadius: [0, 4, 4, 0], ...barGlow('rgba(240,147,251,0.4)') },
+            ...emphasisBar,
+            label: { show: true, position: 'right', color: '#a0aec0' },
+        }],
+    });
+
+    // 表格
+    const tbody = document.getElementById('district-tbody');
+    district.data.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="badge">${d.district}</span></td>
+            <td>${d.cnt.toLocaleString()}</td>
+            <td><b style="color:#667eea">${d.avg_unit.toLocaleString()}</b></td>
+            <td>${d.avg_total.toLocaleString()}</td>
+            <td>${d.avg_area}</td>
+            <td>${d.min_unit.toLocaleString()}</td>
+            <td>${d.max_unit.toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+})();
+</script>
+{% endblock %}

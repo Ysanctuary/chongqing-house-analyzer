@@ -1,0 +1,29 @@
+# ===== Web 框架 =====
+Flask>=3.1,<4.0
+flask-cors>=4.0
+
+# ===== 数据库 =====
+PyMySQL>=1.1
+
+# ===== 数据处理 =====
+pandas>=2.2
+numpy>=1.26
+lxml>=5.0
+beautifulsoup4>=4.12
+
+# ===== 机器学习 =====
+scikit-learn>=1.4
+
+# ===== HTTP 客户端 / 反爬 =====
+requests>=2.31
+curl_cffi>=0.7
+brotli>=1.1
+
+# ===== 人机协作爬虫（可选）=====
+# 仅在运行 wuba_spider_pro.py / lianjia_spider_pro.py 时需要
+# 默认调用系统 Chrome（channel="chrome"），无需 playwright install
+playwright>=1.40
+
+# ===== 标准库自带，无需安装 =====
+# tkinter (Python 自带)
+# json / re / os / sys / subprocess / threading / pathlib

@@ -1,0 +1,55 @@
+# ===== Python 缓存（自动生成，必须排除）=====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+build/
+dist/
+
+# ===== 敏感配置（必须排除，config.example.py 是替代品）=====
+config.py
+.env
+*.env.local
+
+# ===== Cookie / 登录态（绝对不能传）=====
+data/*cookie*.txt
+
+# ===== 爬虫样本 / 调试产物 =====
+data/*.html
+data/parse_result.txt
+data/raw_texts.txt
+
+# ===== 日志 =====
+logs/
+*.log
+
+# ===== 开发过程笔记（不公开）=====
+# 包含：CONTEXT.md、项目代码解析.md、数据生成器升级记录.md、产品化打包方案.md
+详细过程/
+
+# ===== Obsidian 笔记库（个人）=====
+.obsidian/
+.obsidian-workspace
+
+# ===== 系统垃圾 =====
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ===== 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== 测试 =====
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===== 虚拟环境 =====
+venv/
+.venv/
+env/

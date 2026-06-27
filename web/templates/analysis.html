@@ -1,0 +1,308 @@
+{% from "icons.html" import icon_analysis %}
+{% extends "base.html" %}
+
+{% block title %}数据分析 - 重庆二手房分析{% endblock %}
+
+{% block content %}
+<h1 class="page-title reveal">{{ icon_analysis('page-icon') }} 深度数据分析</h1>
+<p class="page-subtitle reveal">机器学习算法 · 特征重要性 · 聚类 · 价格预测</p>
+
+<!-- ============ Section 1: 特征重要性 ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">ML</span>
+        <h2 class="section-title">🎯 特征重要性</h2>
+        <p class="section-desc">什么因素最影响房价？基于随机森林算法</p>
+    </div>
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-title">特征权重分布</div>
+            <div id="chart-importance" class="chart chart-mid"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">模型评估</div>
+            <div style="padding: 20px 0;">
+                <div class="stat-card" style="margin-bottom: 16px;">
+                    <div class="stat-label">模型 R² 评分</div>
+                    <div class="stat-value" id="importance-score" style="font-size: 32px;">--</div>
+                    <div class="stat-unit">越接近 1 越好</div>
+                </div>
+                <div class="stat-card" style="margin-bottom: 16px;">
+                    <div class="stat-label">训练样本数</div>
+                    <div class="stat-value" id="importance-samples" style="font-size: 32px;">--</div>
+                    <div class="stat-unit">条房源</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">首要因素</div>
+                    <div class="stat-value" id="importance-top1" style="font-size: 24px;">--</div>
+                    <div class="stat-unit" id="importance-top1-pct">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-title">💡 解读</div>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
+            重庆作为组团型城市，<b>区县位置</b>是决定房价的第一要素 —— 渝中解放碑、江北观音桥等核心商圈单价可达 2-3.5 万/㎡，而城口、巫溪等远郊区县仅 2-3 千元/㎡，差距高达 <b>10-15 倍</b>。<br>
+            <b>面积</b>和<b>建成年代</b>是次要因素 —— 同区域、同年代，面积越大单价反而略低（通常 1-3% 的折扣）。<br>
+            <b>装修、朝向</b>的影响较小，因为这些"软性"特征被随机森林认为不太可靠。
+        </p>
+    </div>
+</section>
+
+<!-- ============ Section 2: 聚类分析 ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">聚类</span>
+        <h2 class="section-title">🧩 房价聚类（K-Means）</h2>
+        <p class="section-desc">自动将房源分成 4 个价位群体</p>
+    </div>
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-title">各群体房源占比</div>
+            <div id="chart-cluster" class="chart chart-mid"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">各群体均价对比</div>
+            <div id="chart-cluster-bar" class="chart chart-mid"></div>
+        </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-title">聚类详情</div>
+        <table class="table" id="cluster-table">
+            <thead>
+                <tr>
+                    <th>分组</th>
+                    <th>名称</th>
+                    <th>房源数</th>
+                    <th>平均单价(元/㎡)</th>
+                    <th>平均总价(万)</th>
+                    <th>平均面积(㎡)</th>
+                    <th>平均建成年</th>
+                </tr>
+            </thead>
+            <tbody id="cluster-tbody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ============ Section 3: 价格预测器 ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">工具</span>
+        <h2 class="section-title">🔮 价格预测器</h2>
+        <p class="section-desc">输入房源特征，预测合理价格区间</p>
+    </div>
+    <div class="card">
+        <div class="grid grid-4" style="margin-bottom: 20px;">
+            <div class="form-group">
+                <label class="form-label">面积 (㎡)</label>
+                <input type="number" id="pred-area" class="form-input" value="100" min="20" max="500">
+            </div>
+            <div class="form-group">
+                <label class="form-label">户型</label>
+                <select id="pred-layout" class="form-select">
+                    <option>1室1厅</option><option>2室1厅</option><option>2室2厅</option>
+                    <option selected>3室2厅</option><option>4室2厅</option><option>5室2厅</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">区县</label>
+                <select id="pred-district" class="form-select">
+                    <option>渝中区</option><option>江北区</option>
+                    <option selected>渝北区</option><option>南岸区</option>
+                    <option>沙坪坝区</option><option>九龙坡区</option>
+                    <option>大渡口区</option><option>巴南区</option><option>北碚区</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">装修</label>
+                <select id="pred-decoration" class="form-select">
+                    <option>精装</option><option selected>简装</option><option>毛坯</option><option>豪装</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn" onclick="doPredict()">🚀 开始预测</button>
+        <div id="predict-result" style="margin-top: 28px; display: none;">
+            <div class="grid grid-3">
+                <div class="stat-card">
+                    <div class="stat-label">预测单价</div>
+                    <div class="stat-value" id="pred-unit">--</div>
+                    <div class="stat-unit">元/㎡</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">预测总价</div>
+                    <div class="stat-value" id="pred-total">--</div>
+                    <div class="stat-unit">万</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">价格区间</div>
+                    <div class="stat-value" id="pred-range" style="font-size: 20px;">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Section 4: 小区排名 ============ -->
+<section class="section reveal">
+    <div class="section-header">
+        <span class="section-tag">排名</span>
+        <h2 class="section-title">🏘️ 小区排名</h2>
+        <p class="section-desc">性价比 TOP 10 vs 高端 TOP 10</p>
+    </div>
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-title">💎 性价比 TOP 10（单价最低）</div>
+            <table class="table" id="cost-effective-table">
+                <thead><tr><th>#</th><th>小区</th><th>区县</th><th>平均单价</th><th>样本</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <div class="card-title">👑 高端 TOP 10（单价最高）</div>
+            <table class="table" id="expensive-table">
+                <thead><tr><th>#</th><th>小区</th><th>区县</th><th>平均单价</th><th>样本</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const clusterColors = ['#f093fb', '#ffd93d', '#667eea', '#6ee7b7', '#a78bfa', '#fb923c'];
+
+async function loadAnalysis() {
+    // ============ 特征重要性 ============
+    const importance = await fetchJson('/api/feature_importance');
+    echarts.init(document.getElementById('chart-importance')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '8%', bottom: '3%', top: '5%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'value', name: '重要性', nameTextStyle: { fontSize: 12 } },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'category', data: importance.features, axisLabel: { fontSize: 12 } },
+        series: [{
+            type: 'bar',
+            data: importance.importance,
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                    colorStops: [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: '#f093fb' }
+                    ]
+                },
+                borderRadius: [0, 6, 6, 0],
+                ...barGlow('rgba(102,126,234,0.4)'),
+            },
+            label: { show: true, position: 'right', color: '#a0aec0', formatter: p => (p.value * 100).toFixed(1) + '%', fontSize: 11 },
+            barWidth: '50%',
+            ...emphasisBar,
+        }],
+    });
+
+    // 模型评估卡
+    document.getElementById('importance-score').textContent = importance.score || '--';
+    document.getElementById('importance-samples').textContent = (importance.sample_count || 0).toLocaleString();
+    document.getElementById('importance-top1').textContent = importance.features[0] || '--';
+    document.getElementById('importance-top1-pct').textContent = (importance.importance[0] * 100).toFixed(1) + '% 的决定力';
+
+    // ============ 聚类（环形图） ============
+    const clustering = await fetchJson('/api/clustering');
+    echarts.init(document.getElementById('chart-cluster')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'item' },
+        legend: { ...ECHART_THEME.legend, bottom: 0, textStyle: { fontSize: 11 } },
+        series: [{
+            type: 'pie',
+            radius: ['45%', '70%'],
+            data: clustering.clusters.map(c => ({ name: c.name, value: c.count })),
+            itemStyle: { borderColor: '#0a0a0f', borderWidth: 3, ...pieGlow() },
+            label: { color: '#a0aec0', fontSize: 12, formatter: '{b}\n{c}套 ({d}%)' },
+            ...emphasisPie,
+        }],
+        color: clusterColors,
+    });
+
+    // 聚类（柱图）按均价
+    echarts.init(document.getElementById('chart-cluster-bar')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis',
+            formatter: p => `${p[0].name}<br/>均价: <b>${p[0].value.toLocaleString()}</b> 元/㎡` },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '8%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category',
+                 data: clustering.clusters.map(c => c.name), axisLabel: { fontSize: 11, rotate: 15 } },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value', name: '均价(元/㎡)', nameTextStyle: { fontSize: 12 } },
+        series: [{
+            type: 'bar',
+            data: clustering.clusters.map((c, i) => ({
+                value: c.avg_unit_price,
+                itemStyle: { color: clusterColors[i % clusterColors.length], borderRadius: [6, 6, 0, 0], ...barGlow() }
+            })),
+            label: { show: true, position: 'top', color: '#a0aec0', fontSize: 11,
+                     formatter: p => p.value.toLocaleString() },
+            barWidth: '50%',
+            ...emphasisBar,
+        }],
+    });
+
+    // 聚类表格
+    const ctbody = document.getElementById('cluster-tbody');
+    clustering.clusters.forEach(c => {
+        const color = clusterColors[c.id % clusterColors.length];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="badge" style="background: ${color}33; color: ${color};">分组 ${c.id + 1}</span></td>
+            <td><b>${c.name}</b></td>
+            <td>${c.count.toLocaleString()}</td>
+            <td><b style="color: ${color}">${c.avg_unit_price.toLocaleString()}</b></td>
+            <td>${c.avg_total_price}</td>
+            <td>${c.avg_area}</td>
+            <td>${c.avg_year || '-'}</td>
+        `;
+        ctbody.appendChild(tr);
+    });
+
+    // ============ 小区排名 ============
+    const cost = await fetchJson('/api/cost_effective');
+    const ceb = document.querySelector('#cost-effective-table tbody');
+    cost.data.slice(0, 10).forEach((d, i) => {
+        ceb.innerHTML += `<tr>
+            <td>${i + 1}</td>
+            <td>${d.community}</td>
+            <td><span class="badge">${d.district}</span></td>
+            <td><b style="color:#6ee7b7">${d.avg_unit.toLocaleString()}</b></td>
+            <td>${d.cnt}</td>
+        </tr>`;
+    });
+
+    const exp = await fetchJson('/api/expensive_communities');
+    const eb = document.querySelector('#expensive-table tbody');
+    exp.data.slice(0, 10).forEach((d, i) => {
+        eb.innerHTML += `<tr>
+            <td>${i + 1}</td>
+            <td>${d.community}</td>
+            <td><span class="badge">${d.district}</span></td>
+            <td><b style="color:#f093fb">${d.avg_unit.toLocaleString()}</b></td>
+            <td>${d.cnt}</td>
+        </tr>`;
+    });
+}
+
+async function doPredict() {
+    const area = document.getElementById('pred-area').value;
+    const layout = document.getElementById('pred-layout').value;
+    const district = document.getElementById('pred-district').value;
+    const decoration = document.getElementById('pred-decoration').value;
+
+    const r = await fetchJson(`/api/price_predict?area=${area}&layout=${layout}&district=${district}&decoration=${decoration}&orientation=南北`);
+    document.getElementById('pred-unit').textContent = r.predicted_unit_price.toLocaleString();
+    document.getElementById('pred-total').textContent = r.predicted_total_price;
+    document.getElementById('pred-range').textContent = `${r.min_unit_price.toLocaleString()} - ${r.max_unit_price.toLocaleString()} 元/㎡`;
+    document.getElementById('predict-result').style.display = 'block';
+}
+
+loadAnalysis();
+</script>
+{% endblock %}

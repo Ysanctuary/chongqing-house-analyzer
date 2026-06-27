@@ -1,0 +1,230 @@
+{% from "icons.html" import icon_overview, icon_house, icon_coin, icon_pin, icon_buildings, icon_wallet, icon_trend_up, icon_trend_down, icon_lightning %}
+{% extends "base.html" %}
+
+{% block title %}总览 - 重庆二手房分析{% endblock %}
+
+{% block content %}
+<h1 class="page-title reveal">{{ icon_overview('page-icon') }} 数据总览</h1>
+<p class="page-subtitle reveal">重庆二手房市场全景视图 · 数据基于 58 同城等公开渠道</p>
+
+<!-- 统计卡片 -->
+<div class="grid grid-4 reveal" id="stat-cards">
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_house('stat-icon-svg') }}</div>
+        <div class="stat-label">总房源数</div>
+        <div class="stat-value" data-target="0" data-format="int">0</div>
+        <div class="stat-unit">套</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_coin('stat-icon-svg') }}</div>
+        <div class="stat-label">平均单价</div>
+        <div class="stat-value" data-target="0">0</div>
+        <div class="stat-unit">元/㎡</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_pin('stat-icon-svg') }}</div>
+        <div class="stat-label">覆盖区县</div>
+        <div class="stat-value" data-target="0">0</div>
+        <div class="stat-unit">个</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_buildings('stat-icon-svg') }}</div>
+        <div class="stat-label">板块数</div>
+        <div class="stat-value" data-target="0">0</div>
+        <div class="stat-unit">个</div>
+    </div>
+</div>
+
+<!-- 第二行统计 -->
+<div class="grid grid-4 reveal" style="margin-top: 20px;">
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_wallet('stat-icon-svg') }}</div>
+        <div class="stat-label">平均总价</div>
+        <div class="stat-value" data-target="0">0</div>
+        <div class="stat-unit">万</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_trend_up('stat-icon-svg') }}</div>
+        <div class="stat-label">最高单价</div>
+        <div class="stat-value" data-target="0">0</div>
+        <div class="stat-unit">元/㎡</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_trend_down('stat-icon-svg') }}</div>
+        <div class="stat-label">最低单价</div>
+        <div class="stat-value" data-target="0">0</div>
+        <div class="stat-unit">元/㎡</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-svg">{{ icon_lightning('stat-icon-svg') }}</div>
+        <div class="stat-label">数据更新</div>
+        <div class="stat-value" style="font-size: 24px;">实时</div>
+        <div class="stat-unit">增量入库</div>
+    </div>
+</div>
+
+<!-- 图表 -->
+<div class="grid grid-2 reveal" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-title">各区县房源数量</div>
+        <div id="chart-district-cnt" class="chart"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">各区县平均单价</div>
+        <div id="chart-district-price" class="chart"></div>
+    </div>
+</div>
+
+<div class="grid grid-2 reveal" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-title">单价分布</div>
+        <div id="chart-price-dist" class="chart"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">总价分布</div>
+        <div id="chart-total-dist" class="chart"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+    // 加载总览
+    const overview = await fetchJson('/api/overview');
+    document.querySelectorAll('.stat-value[data-target]').forEach(el => {
+        const target = parseFloat(el.dataset.target);
+        if (!isNaN(target) && target > 0) {
+            animateNumber(el, target);
+        }
+    });
+
+    // 设置数值（用 API 返回的真实值）
+    const cards = document.querySelectorAll('.stat-card');
+    function setCard(idx, value, format) {
+        const el = cards[idx].querySelector('.stat-value');
+        if (format === 'int') {
+            el.textContent = value.toLocaleString('zh-CN');
+        } else {
+            animateNumber(el, value);
+        }
+    }
+    setCard(0, overview.total, 'int');          // 总房源
+    setCard(1, overview.avg_unit_price);        // 平均单价
+    setCard(2, overview.district_count);        // 区县
+    setCard(3, overview.bizcircle_count);       // 板块
+    setCard(4, overview.avg_total_price);       // 平均总价
+    setCard(5, overview.max_unit_price);        // 最高单价
+    setCard(6, overview.min_unit_price);        // 最低单价
+
+    // 区县统计（只显示前 20，标签 hover 时才显示）
+    const district = await fetchJson('/api/district_stats');
+    const sortedCnt = district.data.slice().sort((a, b) => b.cnt - a.cnt).slice(0, 20);
+    const sortedPrice = district.data.slice().sort((a, b) => b.avg_unit - a.avg_unit).slice(0, 20);
+
+    echarts.init(document.getElementById('chart-district-cnt')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '6%', bottom: '3%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'value' },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'category', data: sortedCnt.map(d => d.district) },
+        series: [{
+            name: '房源数',
+            type: 'bar',
+            barWidth: 14,
+            data: sortedCnt.map(d => d.cnt),
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                    colorStops: [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: '#f093fb' }
+                    ]
+                },
+                borderRadius: [0, 4, 4, 0],
+                ...barGlow('rgba(102,126,234,0.4)'),
+            },
+            ...emphasisBar,
+            label: { show: false, emphasis: { show: true }, position: 'right', color: '#a0aec0' },
+        }],
+    });
+
+    echarts.init(document.getElementById('chart-district-price')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '6%', bottom: '3%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'value', axisLabel: { ...ECHART_THEME.xAxis.axisLabel, formatter: '{value} 元/㎡' } },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'category', data: sortedPrice.map(d => d.district) },
+        series: [{
+            name: '平均单价',
+            type: 'bar',
+            barWidth: 14,
+            data: sortedPrice.map(d => d.avg_unit),
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                    colorStops: [
+                        { offset: 0, color: '#ffd93d' },
+                        { offset: 1, color: '#f093fb' }
+                    ]
+                },
+                borderRadius: [0, 4, 4, 0],
+                ...barGlow('rgba(255,217,61,0.4)'),
+            },
+            ...emphasisBar,
+            label: { show: false, emphasis: { show: true }, position: 'right', color: '#a0aec0', formatter: '{c} 元/㎡' },
+        }],
+    });
+
+    // 单价分布
+    const priceDist = await fetchJson('/api/price_distribution');
+    echarts.init(document.getElementById('chart-price-dist')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '8%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category', data: priceDist.data.map(d => d.bucket) },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value' },
+        series: [{
+            name: '房源数',
+            type: 'bar',
+            data: priceDist.data.map(d => d.cnt),
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: 'rgba(102, 126, 234, 0.2)' }
+                    ]
+                },
+                borderRadius: [4, 4, 0, 0],
+                ...barGlow('rgba(102,126,234,0.4)'),
+            },
+            ...emphasisBar,
+        }],
+    });
+
+    // 总价分布
+    const totalDist = await fetchJson('/api/total_price_distribution');
+    echarts.init(document.getElementById('chart-total-dist')).setOption({
+        ...ECHART_THEME,
+        tooltip: { ...ECHART_THEME.tooltip, trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '8%', containLabel: true },
+        xAxis: { ...ECHART_THEME.xAxis, type: 'category', data: totalDist.data.map(d => d.bucket) },
+        yAxis: { ...ECHART_THEME.yAxis, type: 'value' },
+        series: [{
+            name: '房源数',
+            type: 'bar',
+            data: totalDist.data.map(d => d.cnt),
+            itemStyle: {
+                color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                        { offset: 0, color: '#f093fb' },
+                        { offset: 1, color: 'rgba(240, 147, 251, 0.2)' }
+                    ]
+                },
+                borderRadius: [4, 4, 0, 0],
+                ...barGlow('rgba(240,147,251,0.4)'),
+            },
+            ...emphasisBar,
+        }],
+    });
+})();
+</script>
+{% endblock %}

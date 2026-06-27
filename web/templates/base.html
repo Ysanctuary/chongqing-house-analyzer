@@ -1,0 +1,72 @@
+{% from "icons.html" import icon_brand, icon_overview, icon_map, icon_charts, icon_analysis, icon_conclusion, icon_control %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}重庆二手房数据分析系统{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <!-- 页面加载动画覆盖层 -->
+    <div class="loading">
+        <div class="loading_blackblock">
+            <div class="loading_animation">
+                <div class="loading_animation_icon">
+                    <div class="loader-ring">
+                        <div class="loader-ring-inner"></div>
+                    </div>
+                    <div class="loader-dots">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="loading_animation_tip">LOADING</div>
+            </div>
+        </div>
+        <div class="loading_greenblock"></div>
+    </div>
+
+    <!-- 粒子背景 -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- 网格背景 -->
+    <div class="bg-grid"></div>
+
+    <!-- 浮动光球 -->
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
+
+    <!-- 导航 -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">{{ icon_brand('logo-icon') }}</span>
+            <span class="brand-text">重庆二手房分析</span>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/" class="nav-link">{{ icon_overview('nav-icon') }} 总览</a></li>
+            <li><a href="/map" class="nav-link">{{ icon_map('nav-icon') }} 地图</a></li>
+            <li><a href="/charts" class="nav-link">{{ icon_charts('nav-icon') }} 图表</a></li>
+            <li><a href="/analysis" class="nav-link">{{ icon_analysis('nav-icon') }} 分析</a></li>
+            <li><a href="/conclusion" class="nav-link">{{ icon_conclusion('nav-icon') }} 结论</a></li>
+            <li><a href="/control" class="nav-link">{{ icon_control('nav-icon') }} 控制</a></li>
+        </ul>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>© 2026 重庆二手房数据分析系统 | 学年设计 2</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

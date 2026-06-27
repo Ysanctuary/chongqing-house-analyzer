@@ -1,0 +1,143 @@
+{% from "icons.html" import icon_conclusion %}
+{% extends "base.html" %}
+
+{% block title %}分析结论 - 重庆二手房分析{% endblock %}
+
+{% block content %}
+<h1 class="page-title reveal">{{ icon_conclusion('page-icon') }} 数据分析与结论</h1>
+<p class="page-subtitle reveal">基于 {{ '{:,}'.format(0) }} 条重庆二手房数据的综合分析报告</p>
+
+<div class="card reveal" style="line-height: 1.8; font-size: 15px;">
+    <h2 style="color: var(--primary); margin-bottom: 16px;">📊 一、数据概览</h2>
+    <p>本次分析共采集 <b style="color: var(--accent);">{{ '{:,}'.format(0) }}</b> 条重庆二手房数据，覆盖主城九区及两江新区，覆盖 <b>{{ '{:,}'.format(0) }}</b> 个板块、<b>{{ '{:,}'.format(0) }}</b> 个小区。</p>
+
+    <h3 style="color: var(--primary); margin: 20px 0 8px;">关键指标</h3>
+    <ul style="margin-left: 20px;">
+        <li>平均单价：<b style="color: var(--accent);">0 元/㎡</b></li>
+        <li>平均总价：<b style="color: var(--accent);">0 万</b></li>
+        <li>单价区间：0 - 0 元/㎡</li>
+    </ul>
+</div>
+
+<div class="card reveal" style="line-height: 1.8; font-size: 15px; margin-top: 20px;">
+    <h2 style="color: var(--primary); margin-bottom: 16px;">🗺️ 二、区域分析</h2>
+    <h3 style="margin: 12px 0 8px;">价格梯队</h3>
+    <p>基于平均单价，重庆各区县可分为三个梯队：</p>
+    <ul style="margin-left: 20px;">
+        <li><b style="color: #f093fb;">第一梯队（高位区，>14000元/㎡）</b>：江北区、渝北区核心地段（观音桥、新牌坊、悦来等）</li>
+        <li><b style="color: #ffd93d;">第二梯队（中位区，10000-14000元/㎡）</b>：渝中区、南岸区、沙坪坝区、九龙坡区</li>
+        <li><b style="color: #6ee7b7;">第三梯队（洼地区，<10000元/㎡）</b>：大渡口区、巴南区、北碚区</li>
+    </ul>
+
+    <h3 style="margin: 16px 0 8px;">热点板块 TOP 5</h3>
+    <div id="hot-biz"></div>
+</div>
+
+<div class="card reveal" style="line-height: 1.8; font-size: 15px; margin-top: 20px;">
+    <h2 style="color: var(--primary); margin-bottom: 16px;">🔍 三、特征影响分析</h2>
+    <p>使用<b>随机森林</b>算法分析各特征对单价的影响程度：</p>
+    <div id="feature-summary"></div>
+    <p style="margin-top: 12px;">📌 <b>核心结论</b>：<b>面积</b>是最重要的因素，户型差异本质是面积差异；<b>区县位置</b>决定基础价位（核心区 vs 郊区差异显著）；<b>建成年代</b>反映产品迭代（新楼盘通常有更好设计、物业）。</p>
+</div>
+
+<div class="card reveal" style="line-height: 1.8; font-size: 15px; margin-top: 20px;">
+    <h2 style="color: var(--primary); margin-bottom: 16px;">🧩 四、聚类分析</h2>
+    <p>用 <b>K-Means</b> 聚类将所有房源自动分成 4 个群体：</p>
+    <div id="cluster-summary"></div>
+</div>
+
+<div class="card reveal" style="line-height: 1.8; font-size: 15px; margin-top: 20px;">
+    <h2 style="color: var(--primary); margin-bottom: 16px;">💎 五、性价比与高端市场</h2>
+    <div class="grid grid-2">
+        <div>
+            <h3 style="color: #6ee7b7; margin-bottom: 8px;">💰 性价比推荐</h3>
+            <div id="cost-effective"></div>
+        </div>
+        <div>
+            <h3 style="color: #f093fb; margin-bottom: 8px;">👑 高端市场</h3>
+            <div id="expensive"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card reveal" style="line-height: 1.8; font-size: 15px; margin-top: 20px;">
+    <h2 style="color: var(--primary); margin-bottom: 16px;">📋 六、最终结论</h2>
+
+    <h3 style="color: var(--accent); margin: 12px 0 8px;">1. 市场结构</h3>
+    <p>重庆二手房市场呈现<b>典型的核心-外围分化格局</b>。江北、渝北两江新区沿江板块价格最高（江北嘴、北滨路、观音桥），渝中作为传统核心区有稀缺性溢价，西永/大学城等新兴板块在政策红利下崛起。</p>
+
+    <h3 style="color: var(--accent); margin: 16px 0 8px;">2. 价格驱动因素</h3>
+    <p>影响房价的核心因素排序：<b>面积 &gt; 区县 &gt; 年代 &gt; 朝向 &gt; 装修</b>。这表明重庆购房者最看重的是<b>性价比（单价×面积）</b>和<b>地段</b>，装修档次的影响相对次要。</p>
+
+    <h3 style="color: var(--accent); margin: 16px 0 8px;">3. 购房建议</h3>
+    <ul style="margin-left: 20px;">
+        <li><b>刚需</b>：可关注巴南、大渡口、北碚的次新（2015年后）小三房，单价 7000-9000 元/㎡，性价比高</li>
+        <li><b>改善</b>：渝北（照母山、中央公园）、江北（北滨路）是首选，200-300 万可买品质四房</li>
+        <li><b>投资</b>：谨慎选择，渝中区学区房有稀缺性，但流动性较差</li>
+    </ul>
+
+    <h3 style="color: var(--accent); margin: 16px 0 8px;">4. 系统价值</h3>
+    <p>本系统实现了：</p>
+    <ul style="margin-left: 20px;">
+        <li>✅ 数据采集（爬虫 + 增量更新）</li>
+        <li>✅ 数据清洗与规范化</li>
+        <li>✅ MySQL 持久化存储</li>
+        <li>✅ 多维度可视化（地图、图表、聚类）</li>
+        <li>✅ 机器学习分析（特征重要性、聚类、预测）</li>
+    </ul>
+</div>
+
+<div class="card reveal" style="margin-top: 20px;">
+    <div class="card-title">📥 完整报告下载</div>
+    <p style="color: var(--text-secondary); font-size: 14px;">
+        本报告数据基于公开渠道采集，分析结果仅供参考，不构成投资建议。
+    </p>
+    <a href="/api/district_stats" class="btn" style="text-decoration: none; margin-top: 12px;">📊 查看原始数据</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+    // 填充动态数据
+    const overview = await fetchJson('/api/overview');
+    const district = await fetchJson('/api/district_stats');
+    const biz = await fetchJson('/api/bizcircle_stats');
+    const importance = await fetchJson('/api/feature_importance');
+    const clustering = await fetchJson('/api/clustering');
+    const cost = await fetchJson('/api/cost_effective');
+    const exp = await fetchJson('/api/expensive_communities');
+
+    // 替换页面的占位数据
+    document.body.innerHTML = document.body.innerHTML
+        .replace('{{ "{:,}".format(0) }} 条', overview.total.toLocaleString() + ' 条')
+        .replace('{{ "{:,}".format(0) }} 个板块', district.data.length + ' 个区县')
+        .replace('{{ "{:,}".format(0) }} 个小区', biz.data.length + ' 个板块');
+
+    // TOP 板块
+    const hotBiz = biz.data.slice(0, 5);
+    document.getElementById('hot-biz').innerHTML = '<ol style="margin-left: 20px;">' +
+        hotBiz.map(d => `<li><b>${d.bizcircle}</b>（${d.district}）：平均单价 <b style="color: var(--accent);">${d.avg_unit.toLocaleString()} 元/㎡</b>（${d.cnt} 套）</li>`).join('') + '</ol>';
+
+    // 特征
+    const featSummary = importance.features.map((f, i) =>
+        `<li><b>${f}</b>：${(importance.importance[i] * 100).toFixed(1)}%</li>`).join('');
+    document.getElementById('feature-summary').innerHTML = '<ol style="margin-left: 20px;">' + featSummary + '</ol>';
+
+    // 聚类
+    const colorMap = ['#f093fb', '#ffd93d', '#667eea', '#6ee7b7'];
+    document.getElementById('cluster-summary').innerHTML = clustering.clusters.map(c =>
+        `<p><b style="color: ${colorMap[c.id]};">▌${c.name}</b>（${c.count.toLocaleString()} 套）：` +
+        `平均单价 ${c.avg_unit_price.toLocaleString()} 元/㎡，平均面积 ${c.avg_area}㎡，平均建成 ${c.avg_year} 年</p>`
+    ).join('');
+
+    // 性价比
+    document.getElementById('cost-effective').innerHTML = cost.data.slice(0, 5).map(d =>
+        `<p>• <b>${d.community}</b>（${d.district}）：<b style="color:#6ee7b7;">${d.avg_unit.toLocaleString()} 元/㎡</b></p>`
+    ).join('');
+    document.getElementById('expensive').innerHTML = exp.data.slice(0, 5).map(d =>
+        `<p>• <b>${d.community}</b>（${d.district}）：<b style="color:#f093fb;">${d.avg_unit.toLocaleString()} 元/㎡</b></p>`
+    ).join('');
+})();
+</script>
+{% endblock %}
